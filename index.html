@@ -2,12 +2,32 @@
 <html>
 <head>
   <meta charset="utf-8">
+  <link rel="stylesheet" type="text/css" href="theme.css">
   <title>Stephan's Blog</title>
 </head>
 <body>
   <h1>Stephan's Blog</h1>
 
-  Not much to see here.
+  <h2>Numbers in Javascript</h2>
+
+  Numbers in Javascript have a number of particular properties.
+  In particular, there are a number of special "Numbers" which aren't ordinarily considered numbers.
+
+  <table>
+  <tr> <th> Special number</th> <th>  Description </th> </tr>
+  <tr> <td> <code>Infinity</code></td> <td>  The mathematical ∞, larger than any number. </td> </tr>
+  <tr> <td> <code>-Infinity</code></td> <td>  The mathematical -∞, smaller than any number. </td> </tr>
+  <tr> <td> <code>NaN</code></td> <td>  Not a Number, but nevertheless <code>typeof NaN === "number"</code>. </td> </tr>
+  <tr> <td> <code>-0</code></td> <td>  Under normal mathematics this would be equal to 0. <br> But while <code>0 === -0</code>, <code>1/0 === Infinity</code> and <code>1/-0 === -Infinity<code>. </td> </tr>
+  </table>
+
+ <p>However, even "normal" numbers have some peculiar properties.
+ <p><code>0.1 + 0.2</code>
+ <p>⇒ <samp>0.30000000000000004</samp>
+ <p>
+
+ Mmmm. That seems a bit off.
+
 
 </body>
 </html>
