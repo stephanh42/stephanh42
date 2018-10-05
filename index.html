@@ -3,12 +3,15 @@
 <head>
   <meta charset="utf-8">
   <link rel="stylesheet" type="text/css" href="theme.css">
+  <script src="https://cdn.rawgit.com/google/code-prettify/master/loader/run_prettify.js"></script>
   <title>Stephan's Blog</title>
 </head>
 <body>
   <h1>Stephan's Blog</h1>
-
-  <h2>Numbers in Javascript</h2>
+  <article class="blog">
+  <header>
+  <h1>Numbers in Javascript</h1>
+  </header>
 
   Numbers in Javascript have a number of particular properties.
   In particular, there are a number of special "Numbers" which aren't ordinarily considered numbers.
@@ -23,10 +26,66 @@
 
  <p>However, even "normal" numbers have some peculiar properties.
  <p><code>0.1 + 0.2</code>
- <p>⇒ <samp>0.30000000000000004</samp>
+ <br>⇒ <samp>0.30000000000000004</samp>
  <p>
-
  Mmmm. That seems a bit off.
+ <p>
+ Most of the rest of this post will be about why we get this result, and some kind of apology
+ why that behavior is kinda OK in most cases. But first things first...
+
+ <div class="shoutout">When you are working with money, this is certainly not OK!</div>
+ <p>
+ I mean, the pennies don't add up! Can there be any disaster greater in accounting than pennies which don't add up?
+ <p>
+ Now I have some amazing confession to make. The built-in Javascript number type is, for exactly the reason we have seen above,
+ <em>unsuitable</em> to represent monetary data. And for kicks, Javascript also doesn't provide another datatype
+ which would be suitable. So that leaves approximately one billion web-shop front-ends to invent their own solution to this
+ problem. You may now want pick up your jaw from the carpet again.
+
+So what to do if you have to deal with money. Well, I would recommend using an external library such as <a href="http://mikemcl.github.io/decimal.js-light/">Decimal.js</a>. With this library, you can do the following:
+
+<p><code>Decimal("0.1").add(Decimal("0.2")).toString()</code>
+<br>⇒ <samp>"0.3"</samp>
+<p>
+OK, so the syntax looks terrible but we get the correct result.
+Also note that we directly convert from string to Decimal, and directly back from Decimal to string.
+So no temporary results as number. This is important to avoid rounding issues.
+
+<h2>Alternative solutions which are not so hot</h2>
+
+If you hang out on stackunderflow or some other wisdom-of-the-masses site, you may get the following recommendations instead.
+<ol>
+<li> Use <code>amount.toFixed(2)</code> to get the end result.</li>
+<li> Do all your accounting in pennies/cents </li>
+<li> Periodically round back to "entire" cents using <code>Math.round(amount*100)/100</code>.
+</ol>
+Of these, the first gets special mention in not even really dealing with the problem but basically just papering over it. Internally the stored number is still off. The other two solutions can be summarized as "let's build Decimal.js ourselves but with more bugs". This may be an educative exercise for the programmer without deadlines, but I'd recommend that if it is about actual money you don't invent this wheel and use something like Decimal.js.
+</article>
+
+<h2>How do Javascript numbers work anyway?</h2>
+
+OK, so now we have the financial data people out of the room, let's see how Javascript numbers
+actually work. Javascript uses a number system standard known as
+<a href="https://en.wikipedia.org/wiki/IEEE_754">IEEE Standard for Floating-Point Arithmetic</a>, or IEEE 754 among friends. In fact, IEEE 754 describes multiple number systems; the one used by Javascript is called binary64. In binary64, a number is stored as 64 bits and it is stored as a binary (base-2) number, as opposed to some decimal (base-10) representation.
+
+<figure>
+<img src="fpjs-figure0.svg">
+<figcaption>The layout of a Javascript number.</figcaption>
+</figure>
+
+<!--
+
+<pre class="prettyprint lang-javascript">
+ function fact(n) {
+   let result = 1;
+   for (let i = 1;  i <= n; i++) {
+     result *= n;
+   }
+   return result;
+ }
+</pre>
+This is an example.
+-->
 
 
 </body>
