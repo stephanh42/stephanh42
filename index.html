@@ -3,17 +3,17 @@
 <head>
   <meta charset="utf-8">
   <link rel="stylesheet" type="text/css" href="theme.css">
-  <script src="https://cdn.rawgit.com/google/code-prettify/master/loader/run_prettify.js"></script>
+  <script src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-MML-AM_CHTML' async></script>
   <title>Stephan's Blog</title>
 </head>
 <body>
   <h1>Stephan's Blog</h1>
   <article class="blog">
   <header>
-  <h1>Numbers in Javascript</h1>
+  <h1>Numbers in JavaScript</h1>
   </header>
 
-  Numbers in Javascript have a number of particular properties.
+  Numbers in JavaScript have a number of particular properties.
   In particular, there are a number of special "Numbers" which aren't ordinarily considered numbers.
 
   <table>
@@ -37,8 +37,8 @@
  <p>
  I mean, the pennies don't add up! Can there be any disaster greater in accounting than pennies which don't add up?
  <p>
- Now I have some amazing confession to make. The built-in Javascript number type is, for exactly the reason we have seen above,
- <em>unsuitable</em> to represent monetary data. And for kicks, Javascript also doesn't provide another datatype
+ Now I have some amazing confession to make. The built-in JavaScript number type is, for exactly the reason we have seen above,
+ <em>unsuitable</em> to represent monetary data. And for kicks, JavaScript also doesn't provide another datatype
  which would be suitable. So that leaves approximately one billion web-shop front-ends to invent their own solution to this
  problem. You may now want pick up your jaw from the carpet again.
 
@@ -62,30 +62,59 @@ If you hang out on stackunderflow or some other wisdom-of-the-masses site, you m
 Of these, the first gets special mention in not even really dealing with the problem but basically just papering over it. Internally the stored number is still off. The other two solutions can be summarized as "let's build Decimal.js ourselves but with more bugs". This may be an educative exercise for the programmer without deadlines, but I'd recommend that if it is about actual money you don't invent this wheel and use something like Decimal.js.
 </article>
 
-<h2>How do Javascript numbers work anyway?</h2>
+<h2>How do JavaScript numbers work anyway?</h2>
 
-OK, so now we have the financial data people out of the room, let's see how Javascript numbers
-actually work. Javascript uses a number system standard known as
-<a href="https://en.wikipedia.org/wiki/IEEE_754">IEEE Standard for Floating-Point Arithmetic</a>, or IEEE 754 among friends. In fact, IEEE 754 describes multiple number systems; the one used by Javascript is called binary64. In binary64, a number is stored as 64 bits and it is stored as a binary (base-2) number, as opposed to some decimal (base-10) representation.
+OK, so now we have the financial data people out of the room, let's see how JavaScript numbers
+actually work. JavaScript uses a number system standard known as
+<a href="https://en.wikipedia.org/wiki/IEEE_754">IEEE Standard for Floating-Point Arithmetic</a>, or IEEE 754 among friends. In fact, IEEE 754 describes multiple number systems; the one used by JavaScript is called binary64. In binary64, a number is stored as 64 bits and it is stored as a binary (base-2) number, as opposed to some decimal (base-10) representation.
 
 <figure>
 <img src="fpjs-figure0.svg">
-<figcaption>The layout of a Javascript number.</figcaption>
+<figcaption>The layout of a JavaScript number.</figcaption>
 </figure>
 
-<!--
+So we have three fields, each of which can be considered an unsigned integer.
+Now, given those three numbers, how do we get back to our original number \(x\)?
 
-<pre class="prettyprint lang-javascript">
- function fact(n) {
-   let result = 1;
-   for (let i = 1;  i <= n; i++) {
-     result *= n;
-   }
-   return result;
- }
+<ol>
+<li> First we take the fraction \(F\) and divide by \(2^{52}\). That produces a number \(x_1\). Note that \(0 \le x_1 < 1\).
+<li> Add 1 to \(x_1\), producing a number \(x_2\) so that \(1 \le x_2 < 2\).
+<li> Then multiply \(x_2\) with the number \(2^{E-1023}\), producing a number \(x_3\). <br>
+    Note that if \(E < 1023 \) then we are multiplying with a number smaller than 1, so we may end up with a fractional result.
+<li> Finally, if \(S = 0\) then \( = x_3\), and if \(S = 1\) then \(x = -x_3\).
+</ol>
+
+This can be summarized in a single formula.
+
+<figure>
+\[ x = (-1)^S \cdot (1 + \frac{F}{2^{52}}) \cdot 2^{E - 1023} \]
+</figure>
+
+Note that there are special rules for \(E = 0\) and \(E = 2047\) (the maximum value for \(E\)).
+
+<table>
+<tr><th>\(S\)</th> <th>\(E\)</th> <th>\(F\)</th> <th>\(x\)</th> <th>note</th> </tr>
+<tr> <td>0</td> <td>0</td> <td>0</td> <td>0</td> </tr>
+<tr> <td>1</td> <td>0</td> <td>0</td> <td>-0</td> <td>a distinct value from 0</td> </tr>
+<tr> <td>0</td> <td>2047</td> <td>0</td> <td><code>Infinity</code></td> </tr>
+<tr> <td>1</td> <td>2047</td> <td>0</td> <td><code>-Infinity</code></td> </tr>
+<tr> <td>0 or 1</td> <td>2047</td> <td>\(\ne 0\)</td> <td><code>NaN</code></td> <td>many possible representations</td></tr>
+<tr> <td>0 or 1</td> <td>0</td> <td>\(\ne 0\)</td> <td>\({(-1)}^S \cdot F \cdot 2^{-1074}\)</td> <td>so-called <em>subnormal</em> numbers</td></tr>
+</table>
+
+<pre class="code">
+function decomposeNumber(x) {
+  const dataView = new DataView(new ArrayBuffer(8));
+  dataView.setFloat64(0, x);
+  const hi = dataView.getUint32(0);
+  const lo = dataView.getUint32(4);
+  return {
+    S: hi >>> 31, 
+    E: (hi << 1) >>> 21, 
+    F: (hi & ((1<<20)-1)) * 2**32 + lo
+  };
+}
 </pre>
-This is an example.
--->
 
 
 </body>

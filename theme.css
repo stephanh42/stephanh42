@@ -22,7 +22,7 @@ table {
   border: none;
 }
 
-code, samp {
+code, samp, .code {
   color: #1f1f1f;
   font-family: courier, monospace;
   background-color: #eee;
@@ -43,4 +43,8 @@ th, td,tr {
   border-style: none none solid none;
   padding: 5px 15px;
   vertical-align: top;
+}
+
+li {
+  padding: 5px 10px;
 }
