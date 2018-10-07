@@ -40,9 +40,11 @@
  Now I have some amazing confession to make. The built-in JavaScript number type is, for exactly the reason we have seen above,
  <em>unsuitable</em> to represent monetary data. And for kicks, JavaScript also doesn't provide another datatype
  which would be suitable. So that leaves approximately one billion web-shop front-ends to invent their own solution to this
- problem. You may now want pick up your jaw from the carpet again.
-
-So what to do if you have to deal with money. Well, I would recommend using an external library such as <a href="http://mikemcl.github.io/decimal.js-light/">Decimal.js</a>. With this library, you can do the following:
+ problem. 
+ <p>
+ You may now want pick up your jaw from the carpet again.
+ <p>
+So what to do if you have to deal with money? Well, I would recommend using an external library such as <a href="http://mikemcl.github.io/decimal.js-light/">Decimal.js</a>. With this library, you can do the following:
 
 <p><code>Decimal("0.1").add(Decimal("0.2")).toString()</code>
 <br>⇒ <samp>"0.3"</samp>
@@ -99,8 +101,33 @@ Note that there are special rules for \(E = 0\) and \(E = 2047\) (the maximum va
 <tr> <td>0</td> <td>2047</td> <td>0</td> <td><code>Infinity</code></td> </tr>
 <tr> <td>1</td> <td>2047</td> <td>0</td> <td><code>-Infinity</code></td> </tr>
 <tr> <td>0 or 1</td> <td>2047</td> <td>\(\ne 0\)</td> <td><code>NaN</code></td> <td>many possible representations</td></tr>
-<tr> <td>0 or 1</td> <td>0</td> <td>\(\ne 0\)</td> <td>\({(-1)}^S \cdot F \cdot 2^{-1074}\)</td> <td>so-called <em>subnormal</em> numbers</td></tr>
+<tr> <td>0 or 1</td> <td>0</td> <td>\(\ne 0\)</td> <td>\({(-1)}^S \cdot F \cdot 2^{-1074}\)</td> <td>so-called <em><a href="https://en.wikipedia.org/wiki/Denormal_number">subnormal</a></em> numbers</td></tr>
 </table>
+
+The important take-away is that, with these rules, there is no way to represent the number 0.1 exactly. In fact, numbers like \(1/3\) or \(1/5\) also cannot be represented exactly. The only fractions which can possibly be represented exactly are ones where the denominator is a power of two. So \(1/2\) and \(3/4\) can be represented exactly, but 0.1, 0.2 and 0.3 (a.k.a. \(1/10\), \(1/5\) and \(3/10\)) cannot.
+
+<h2>So what happens if I enter 0.1 on the JavaScript console?</h2>
+
+You enter <code>0.1</code> in the JavaScript console and get back <samp>0.1</samp>.
+How is this possible?
+<p>
+Well, what really happens is that 0.1 is first rounded to the nearest number which <em>can</em>
+be represented. That is the number with 
+S = 0, E = 1019 and  F= 2702159776422298. In decimal, it is the number
+<figure>
+0.1000000000000000055511151231257827021181583404541015625
+</figure>
+So why doesn't the console print back that number?
+<p>
+Well, the thinking was that printing back the above number would be a bit excessive. So there is actually a <em>second</em> approximation, a step which I call <em>un-rounding</em>. We are going to round the number to a minimum number of (decimal) digits so that, if we convert it back to a JavaScript floating-point number,
+it is still the same number. This is kind of the opposite operation of the rounding we do when converting from decimal to binary.
+<p>
+Un-rounding the ugly number above will again give 0.1. (Try entering it in a JavaScript console.)
+
+
+<h2>Computing S, E and F in JavaScript</h2>
+
+Here is some code to find S, E and F for an arbitrary JavaScript number.
 
 <pre class="code">
 function decomposeNumber(x) {

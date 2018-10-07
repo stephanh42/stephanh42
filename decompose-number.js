@@ -12,4 +12,15 @@ function decomposeNumber(x) {
   }
 }
 
-module.exports = decomposeNumber;
+function describeNumber(x) {
+  const {S, E, F} = decomposeNumber(x);
+  let str = `${F+2**52} \\cdot 2^{${E-1023-52}}`;
+  if (S) {
+    str = '-' + str;
+  }
+  return [str, (F+2**52) * 2**(E-1023-52)];
+}
+
+
+exports.decomposeNumber = decomposeNumber;
+exports.describeNumber = describeNumber;
