@@ -124,6 +124,14 @@ it is still the same number. This is kind of the opposite operation of the round
 <p>
 Un-rounding the ugly number above will again give 0.1. (Try entering it in a JavaScript console.)
 
+<h2>A bit more about rounding</h2>
+
+Rounding doesn't only happen when a number is converted from decimal. In fact, operations like
++, -, * and / can produce a number which cannot be represented as a JavaScript floating-point number.
+In all those cases, what happens is that (at least conceptually), first the <em>exact</em> result is calculated, and then it is again rounded to the nearest number which can be represented. 
+<p>
+Finally, it is possible that the exact result is precisely in the middle of two representable numbers. In that case the number which has F even is selected. This is called the <a href="https://en.wikipedia.org/wiki/Rounding#Round_half_to_even">round half to even</a> rounding rule.
+
 
 <h2>Computing S, E and F in JavaScript</h2>
 
