@@ -30,6 +30,10 @@ code, samp, .code {
   padding: 0 3px;
 }
 
+.code {
+  display: block;
+}
+
 samp {
   background-color: #bbe;
 }

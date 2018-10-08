@@ -137,7 +137,8 @@ Finally, it is possible that the exact result is precisely in the middle of two 
 
 Here is some code to find S, E and F for an arbitrary JavaScript number.
 
-<pre class="code">
+<pre>
+<script class="code" type="text/javascript">
 function decomposeNumber(x) {
   const dataView = new DataView(new ArrayBuffer(8));
   dataView.setFloat64(0, x);
@@ -149,7 +150,11 @@ function decomposeNumber(x) {
     F: (hi & ((1<<20)-1)) * 2**32 + lo
   };
 }
+</script>
 </pre>
+This code is actually in a &lt;script&gt; tag, so you can now open your JavaScript console 
+and try it out live.
+</article>
 
 
 </body>
