@@ -132,14 +132,65 @@ In all those cases, what happens is that (at least conceptually), first the <em>
 <p>
 Finally, it is possible that the exact result is precisely in the middle of two representable numbers. In that case the number which has F even is selected. This is called the <a href="https://en.wikipedia.org/wiki/Rounding#Round_half_to_even">round half to even</a> rounding rule.
 
+<h2>The story of 0.1 + 0.2</h2>
+
+We can now reconstruct what happens exactly when evaluating <code>0.1 + 0.2</code>.
+
+<ol>
+  <li>
+    The number 0.1 is parsed. It is not exactly representable so it is rounded to the nearest representable number
+    \(x =3{,}602{,}879{,}701{,}896{,}397 \cdot 2^{-55}\).
+    This is a rounding error of \(2^{-55}\cdot 5^{-1} \approx 5.55112 \cdot 10^{-18}\) in positive direction.
+  <li>
+    The number \(0.2\) is parsed. It is not exactly representable so it is rounded to the nearest representable number
+    \(y =3{,}602{,}879{,}701{,}896{,}397 \cdot 2^{-54}\).
+    This is a rounding error of \(2^{-54}\cdot 5^{-1}  \approx 1.11022 \cdot 10^{-17} \) in  positive direction.
+   <li>
+     The sum \(x+y\) is calculated. The exact result is \(z = 10{,}808{,}639{,}105{,}689{,}191 \cdot 2^{-55}\).    
+  <li> 
+      However \(z\) is not exactly representable. So it gets rounded to the nearest representable number which is
+      \(z' = 1{,}351{,}079{,}888{,}211{,}149 \cdot 2^{-52}\).
+      This is a rounding error of \(2^{-55} \approx 2.77556 \cdot 10^{-17} \) in positive direction.
+   <li>
+      Finally, \(z'\) gets un-rounded to \(0.30000000000000004\). This is an error of
+      \(15{,}148{,}937{,}153 \cdot 2^{-52}\cdot 5^{-17} \approx 4.4089\cdot 10^{-18}\) in <em>negative</em> direction.
+</ol>
+The cumulative error is of course \(4 \cdot 10^{-17}\). From the above we can see that all four errors are
+in the same ballpark of magnitude, although the rounding after summing dominates.
+
+Is this error bad? On one hand, the number returned is not the mathematically right one.
+On the other hand, if we could measure the average distance of the Sun to Neptune with this accuracy,
+we would be making an error of less than a millimeter. That is mind-boggling accurate. No actual measuring device
+can produce something even resembling that accuracy. If we are using floating point numbers with measured quantities,
+there is no justification in not accepting this level of inaccuracy.
+
+<h2>Safe integers</h2>
+
+When working with numbers, a lot of the time we are only working with integer numbers.
+In that case it is good to know that there is a large range of so-called <em>safe integers</em> where
+we don't need to worry about rounding.
+<p>
+A safe integer has the following properties:
+<ol>
+  <li> It can be <em>exactly represented</em> as a JavaScript floating-point number.
+  <li> No other <em>integer</em> number will ever be rounded to this number.
+</ol>
+These two properties mean that if we have, say, the result of adding two integers <code>a + b</code>, and
+the result is a safe integer, we know there wasn't any rounding involved. Note that this conclusion only holds
+if we know the sum <code>a + b</code> is in fact integer, since it is still possible for a <em>non</em>-integer number to round to a safe integer! (For example, if you enter <code>9007199254740990.6</code> on the JavaScript console you will get back <samp>9007199254740991</samp>, which is a safe integer.)
+<p>
+The safe integers are the integers \(n\) with \(-2^{53}+1 \le n \le 2^{53}-1\). These limits are also available in JavaScript as <code>Number.MIN_SAFE_INTEGER</code> and <code>Number.MAX_SAFE_INTEGER</code>. You can also directly check if a number is a safe integer with <code>Number.isSafeInteger(n)</code>.
+<p>
+Note that this is a pretty big range, also considering that the largest possible array in JavaScript is only \(2^{32}-1\).
+If it is still not enough, then there is currently a proposal for <a href="https://github.com/tc39/proposal-bigint">BigInt</a> support in JavaScript. This would allow arbitrary large integers, only limited by the memory in your computer.
+
 
 <h2>Computing S, E and F in JavaScript</h2>
 
 Here is some code to find S, E and F for an arbitrary JavaScript number.
 
 <pre>
-<script class="code" type="text/javascript">
-function decomposeNumber(x) {
+<script class="code" type="text/javascript">function decomposeNumber(x) {
   const dataView = new DataView(new ArrayBuffer(8));
   dataView.setFloat64(0, x);
   const hi = dataView.getUint32(0);
@@ -153,7 +204,7 @@ function decomposeNumber(x) {
 </script>
 </pre>
 This code is actually in a &lt;script&gt; tag, so you can now open your JavaScript console 
-and try it out live.
+and try it out live (typically with <kbd>F12</kbd>).
 </article>
 
 
