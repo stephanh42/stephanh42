@@ -200,6 +200,54 @@ The safe integers are the integers \(n\) with \(-2^{53}+1 \le n \le 2^{53}-1\). 
 Note that this is a pretty big range, also considering that the largest possible array in JavaScript is only \(2^{32}-1\).
 If it is still not enough, then there is currently a proposal for <a href="https://github.com/tc39/proposal-bigint">BigInt</a> support in JavaScript. This would allow arbitrary large integers, only limited by the memory in your computer.
 
+<h2>Special numbers: NaN, -0, ±Infinity</h2>
+
+Let's talk a bit more about these four weird numbers which aren't part of the normal real number line:
+<code>NaN</code>, <code>-0</code>, <code>Infinity</code> and <code>-Infinity</code>.
+<p>
+The first of them, <code>NaN</code>, is what you get when a mathematical operation doesn't have a defined result.
+So for example <code>0/0</code> gives <samp>NaN</samp>, and similarly <code>Math.sqrt(-1)</code>. Note that
+<code>NaN</code> has a very peculiar property; it is the only value in JavaScript which is
+<em>unequal to itself</em>. So in fact <code>NaN === NaN</code> returns <samp>false</samp>.
+<p>
+Note that this means that if you want to check for <code>NaN</code>, you shouldn't do <code><span class="metavar">number</span> === NaN</code>, but rather use the <code>isNaN</code> function like so: <code>isNaN(<span class="metavar">number</span>)</code>.
+<p>
+The situation with <code>-0</code> and <code>0</code> is a bit like the reverse of the <code>NaN</code> situation; while these two values are distinct, we have <code>0 === -0</code>. So these values can be <em>almost</em> used interchangeably, except that in a few situations operations on them produce different results. So for example, <code>1/0</code> gives <samp>Infinity</samp>, but <code>1/-0</code> gives <samp>-Infinity</samp>. And <code>Infinity !== -Infinity</code>.
+<p>
+Sometimes it is useful to check if two numbers are <em>really</em> the same. In that case, you can use the function <code>Object.is</code>. This is the same as <code>===</code>, <em>except</em> for <code>NaN</code> and <code>±0</code>. So <code>Object.is(NaN, NaN)</code> produces <samp>true</samp> and <code>Object.is(0, -0)</code> produces <samp>false</samp>.
+
+<h2>Floating-point identities</h2>
+
+Under normal mathematics, addition is <em>associative</em>, which means that for arbitrary numbers \(x\), \(y\) and \(z\), the equality \( (x + y) + z = x + (y + z)\) holds. However, with JavaScript floating-point numbers a rounding step occurs after each addition, so this equality is generally <em>not</em> true for JavaScript numbers. For example, try <code>(0.1 + 0.2) + 0.3</code> and compare with <code>0.1 + (0.2 + 0.3)</code>. 
+<p>
+So that is the bad news. The good news is that there are still a number of <em>identities</em> which hold even for
+floating-point numbers. So for example, addition is still <em>commutative</em>, meaning that
+<code><span class="metavar">x</span> + <span class="metavar">y</span> === <span class="metavar">y</span> + <span class="metavar">x</span></code>. 
+<p>
+The following table shows a number of useful identities which hold for any JavaScript number (unless otherwise mentioned), so also
+for <code>NaN</code>, <code>±Infinity</code> and <code>±0</code>. 
+ Equality is in terms of <code>Object.is</code>, so these identities preserve <code>NaN</code> and the sign of <code>±0</code>.
+<figure>
+<table>
+  <tr> <td> \(x + y \equiv y + x\) </td>
+        <td> \(x * y \equiv y * x\) </td>
+   </tr>
+  <tr> <td> \(- (- x) \equiv x\) </td>
+        <td> \(x - y \equiv x + (- y)\) </td>
+   </tr>
+  <tr> <td> \(x - 0 \equiv x\) </td>
+        <td> \(x + 0 \equiv x \), for \(x \not\equiv -0\). Note: \((-0) + 0 \equiv 0\).</td>
+   </tr>
+  <tr> <td> \(1 * x \equiv x\) </td>
+        <td> \( (-1) * x \equiv -x \)</td>
+   </tr>
+  <tr> <td> \(2 * x \equiv x + x\) </td>
+        <td> \( x - x \equiv 0 \), for \(x \not\in \) {<code>Infinity</code>, <code>-Infinity</code>, <code>NaN</code>}.</td>
+   </tr>
+</table>
+<figcaption>Floating-point identities. The symbol \(\equiv\) means equality in the sense of <code>Object.is</code>.</figcaption>
+</figure>
+
 
 <h2>Computing S, E and F in JavaScript</h2>
 
