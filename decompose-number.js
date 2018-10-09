@@ -21,6 +21,15 @@ function describeNumber(x) {
   return [str, (F+2**52) * 2**(E-1023-52)];
 }
 
+function unround(x) {
+  for (let precision = 1;; precision++) {
+    const str = x.toPrecision(precision);
+    if (Number.parseFloat(str) === x) {
+      return str;
+    }
+  }
+}
 
 exports.decomposeNumber = decomposeNumber;
 exports.describeNumber = describeNumber;
+exports.unround = unround;

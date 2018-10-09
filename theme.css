@@ -34,6 +34,10 @@ code, samp, .code {
   display: block;
 }
 
+.metavar {
+  font-style: italic;
+}
+
 samp {
   background-color: #bbe;
 }

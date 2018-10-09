@@ -122,6 +122,22 @@ So why doesn't the console print back that number?
 Well, the thinking was that printing back the above number would be a bit excessive. So there is actually a <em>second</em> approximation, a step which I call <em>un-rounding</em>. We are going to round the number to a minimum number of (decimal) digits so that, if we convert it back to a JavaScript floating-point number,
 it is still the same number. This is kind of the opposite operation of the rounding we do when converting from decimal to binary.
 <p>
+Un-rounding happens when the <code><span class="metavar">number</span>.toString()</code> method is invoked, or in any of
+the many situations where a number is automatically converted to a string (e.g. <code>'' + <span class="metavar">number</span></code>).
+<p>
+Conceptually what happens can be described with the following function: we try to find the <em>minimum</em> precision so that the number "round-trips", i.e. rounds back to the same JavaScript floating-point number.
+<pre class="code">
+function unround(x) {
+  for (let precision = 1;; precision++) {
+    const str = x.toPrecision(precision);
+    if (Number.parseFloat(str) === x) {
+      return str;
+    }
+  }
+}
+</pre>
+Note that the actual implementation is cleverer than this, it doesn't really parse the float again and again. That would be deadly slow.
+<p>
 Un-rounding the ugly number above will again give 0.1. (Try entering it in a JavaScript console.)
 
 <h2>A bit more about rounding</h2>
