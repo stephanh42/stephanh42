@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <link rel="stylesheet" type="text/css" href="theme.css">
+  <script src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-MML-AM_CHTML' async></script>
+  <title>Stephan's Blog</title>
+</head>
+<body>
+  <h1>Stephan's Blog</h1>
+  <article class="blog">
+  <header>
+  <h1>Numbers in JavaScript</h1>
+  </header>
+
+  Numbers in JavaScript have a number of particular properties.
+  In particular, there are a number of special "Numbers" which aren't ordinarily considered numbers.
+
+  <table>
+  <tr> <th> Special number</th> <th>  Description </th> </tr>
+  <tr> <td> <code>Infinity</code></td> <td>  The mathematical ∞, larger than any number. </td> </tr>
+  <tr> <td> <code>-Infinity</code></td> <td>  The mathematical -∞, smaller than any number. </td> </tr>
+  <tr> <td> <code>NaN</code></td> <td>  Not a Number, but nevertheless <code>typeof NaN === "number"</code>. </td> </tr>
+  <tr> <td> <code>-0</code></td> <td>  Under normal mathematics this would be equal to 0. <br> But while <code>0 === -0</code>, <code>1/0 === Infinity</code> and <code>1/-0 === -Infinity<code>. </td> </tr>
+  </table>
+
+ <p>However, even "normal" numbers have some peculiar properties.
+ <p><code>0.1 + 0.2</code>
+ <br>⇒ <samp>0.30000000000000004</samp>
+ <p>
+ Mmmm. That seems a bit off.
+ <p>
+ Most of the rest of this post will be about why we get this result, and some kind of apology
+ why that behavior is kinda OK in most cases. But first things first...
+
+ <div class="shoutout">When you are working with money, this is certainly not OK!</div>
+ <p>
+ I mean, the pennies don't add up! Can there be any disaster greater in accounting than pennies which don't add up?
+ <p>
+ Now I have some amazing confession to make. The built-in JavaScript number type is, for exactly the reason we have seen above,
+ <em>unsuitable</em> to represent monetary data. And for kicks, JavaScript also doesn't provide another datatype
+ which would be suitable. So that leaves approximately one billion web-shop front-ends to invent their own solution to this
+ problem. 
+ <p>
+ You may now want pick up your jaw from the carpet again.
+ <p>
+So what to do if you have to deal with money? Well, I would recommend using an external library such as <a href="http://mikemcl.github.io/decimal.js-light/">Decimal.js</a>. With this library, you can do the following:
+
+<p><code>Decimal("0.1").add(Decimal("0.2")).toString()</code>
+<br>⇒ <samp>"0.3"</samp>
+<p>
+OK, so the syntax looks terrible but we get the correct result.
+Also note that we directly convert from string to Decimal, and directly back from Decimal to string.
+So no temporary results as number. This is important to avoid rounding issues.
+
+<h2>Alternative solutions which are not so hot</h2>
+
+If you hang out on stackunderflow or some other wisdom-of-the-masses site, you may get the following recommendations instead.
+<ol>
+<li> Use <code>amount.toFixed(2)</code> to get the end result.</li>
+<li> Do all your accounting in pennies/cents </li>
+<li> Periodically round back to "entire" cents using <code>Math.round(amount*100)/100</code>.
+</ol>
+Of these, the first gets special mention in not even really dealing with the problem but basically just papering over it. Internally the stored number is still off. The other two solutions can be summarized as "let's build Decimal.js ourselves but with more bugs". This may be an educative exercise for the programmer without deadlines, but I'd recommend that if it is about actual money you don't invent this wheel and use something like Decimal.js.
+</article>
+
+<h2>How do JavaScript numbers work anyway?</h2>
+
+OK, so now we have the financial data people out of the room, let's see how JavaScript numbers
+actually work. JavaScript uses a number system standard known as
+<a href="https://en.wikipedia.org/wiki/IEEE_754">IEEE Standard for Floating-Point Arithmetic</a>, or IEEE 754 among friends. In fact, IEEE 754 describes multiple number systems; the one used by JavaScript is called binary64. In binary64, a number is stored as 64 bits and it is stored as a binary (base-2) number, as opposed to some decimal (base-10) representation. This number system is also commonly known as double-precision format, or simply as "double".
+
+<figure>
+<img src="fpjs-figure0.svg">
+<figcaption>The layout of a JavaScript number.</figcaption>
+</figure>
+
+So we have three fields, each of which can be considered an unsigned integer.
+Now, given those three numbers, how do we get to the actual represented number \(x\)?
+
+<ol>
+<li> First we take the fraction \(F\) and divide by \(2^{52}\). That produces a number \(x_1\). Note that \(0 \le x_1 < 1\).
+<li> Add 1 to \(x_1\), producing a number \(x_2\) so that \(1 \le x_2 < 2\).
+<li> Then multiply \(x_2\) with the number \(2^{E-1023}\), producing a number \(x_3\). <br>
+    Note that if \(E < 1023 \) then we are multiplying with a number smaller than 1, so we may end up with a fractional result.
+<li> Finally, if \(S = 0\) then \( = x_3\), and if \(S = 1\) then \(x = -x_3\).
+</ol>
+
+This can be summarized in a single formula.
+
+<figure>
+\[ x = (-1)^S \cdot (1 + \frac{F}{2^{52}}) \cdot 2^{E - 1023} \]
+</figure>
+
+Note that there are special rules for \(E = 0\) and \(E = 2047\) (the maximum value for \(E\)).
+
+<table>
+<tr><th>\(S\)</th> <th>\(E\)</th> <th>\(F\)</th> <th>\(x\)</th> <th>note</th> </tr>
+<tr> <td>0</td> <td>0</td> <td>0</td> <td>0</td> </tr>
+<tr> <td>1</td> <td>0</td> <td>0</td> <td>-0</td> <td>a distinct value from 0</td> </tr>
+<tr> <td>0</td> <td>2047</td> <td>0</td> <td><code>Infinity</code></td> </tr>
+<tr> <td>1</td> <td>2047</td> <td>0</td> <td><code>-Infinity</code></td> </tr>
+<tr> <td>0 or 1</td> <td>2047</td> <td>\(\ne 0\)</td> <td><code>NaN</code></td> <td>many possible representations</td></tr>
+<tr> <td>0 or 1</td> <td>0</td> <td>\(\ne 0\)</td> <td>\({(-1)}^S \cdot F \cdot 2^{-1074}\)</td> <td>so-called <em><a href="https://en.wikipedia.org/wiki/Denormal_number">subnormal</a></em> numbers</td></tr>
+</table>
+
+The important take-away is that, with these rules, there is no way to represent the number 0.1 exactly. In fact, numbers like \(1/3\) or \(1/5\) also cannot be represented exactly. The only fractions which can possibly be represented exactly are ones where the denominator is a power of two. So \(1/2\) and \(3/4\) can be represented exactly, but 0.1, 0.2 and 0.3 (a.k.a. \(1/10\), \(1/5\) and \(3/10\)) cannot.
+
+<h2>So what happens if I enter 0.1 on the JavaScript console?</h2>
+
+You enter <code>0.1</code> in the JavaScript console and get back <samp>0.1</samp>.
+How is this possible?
+<p>
+Well, what really happens is that 0.1 is first rounded to the nearest number which <em>can</em>
+be represented. That is the number with 
+S = 0, E = 1019 and  F= 2702159776422298. In decimal, it is the number
+<figure>
+0.1000000000000000055511151231257827021181583404541015625
+</figure>
+So why doesn't the console print back that number?
+<p>
+Well, the thinking was that printing back the above number would be a bit excessive. So there is actually a <em>second</em> approximation, a step which I call <em>un-rounding</em>. We are going to round the number to a minimum number of (decimal) digits so that, if we convert it back to a JavaScript floating-point number,
+it is still the same number. This is kind of the opposite operation of the rounding we do when converting from decimal to binary.
+<p>
+Un-rounding happens when the <code><span class="metavar">number</span>.toString()</code> method is invoked, or in any of
+the many situations where a number is automatically converted to a string (e.g. <code>'' + <span class="metavar">number</span></code>).
+<p>
+Conceptually what happens can be described with the following function: we try to find the <em>minimum</em> precision so that the number "round-trips", i.e. rounds back to the same JavaScript floating-point number.
+<pre class="code">
+function unround(x) {
+  for (let precision = 1;; precision++) {
+    const str = x.toPrecision(precision);
+    if (Number.parseFloat(str) === x) {
+      return str;
+    }
+  }
+}
+</pre>
+Note that the actual implementation is cleverer than this, it doesn't really parse the float again and again. That would be deadly slow.
+<p>
+Un-rounding the ugly number above will again give 0.1. (Try entering it in a JavaScript console.)
+
+<h2>A bit more about rounding</h2>
+
+Rounding doesn't only happen when a number is converted from decimal. In fact, operations like
++, -, * and / can produce a number which cannot be represented as a JavaScript floating-point number.
+In all those cases, what happens is that (at least conceptually), first the <em>exact</em> result is calculated, and then it is again rounded to the nearest number which can be represented. 
+<p>
+Finally, it is possible that the exact result is precisely in the middle of two representable numbers. In that case the number which has F even is selected. This is called the <a href="https://en.wikipedia.org/wiki/Rounding#Round_half_to_even">round half to even</a> rounding rule.
+
+<h2>The story of 0.1 + 0.2</h2>
+
+We can now reconstruct what happens exactly when evaluating <code>0.1 + 0.2</code>.
+
+<ol>
+  <li>
+    The number 0.1 is parsed. It is not exactly representable so it is rounded to the nearest representable number
+    \(x =3{,}602{,}879{,}701{,}896{,}397 \cdot 2^{-55}\).
+    This is a rounding error of \(2^{-55}\cdot 5^{-1} \approx 5.55112 \cdot 10^{-18}\) in positive direction.
+  <li>
+    The number \(0.2\) is parsed. It is not exactly representable so it is rounded to the nearest representable number
+    \(y =3{,}602{,}879{,}701{,}896{,}397 \cdot 2^{-54}\).
+    This is a rounding error of \(2^{-54}\cdot 5^{-1}  \approx 1.11022 \cdot 10^{-17} \) in  positive direction.
+   <li>
+     The sum \(x+y\) is calculated. The exact result is \(z = 10{,}808{,}639{,}105{,}689{,}191 \cdot 2^{-55}\).    
+  <li> 
+      However \(z\) is not exactly representable. So it gets rounded to the nearest representable number which is
+      \(z' = 1{,}351{,}079{,}888{,}211{,}149 \cdot 2^{-52}\).
+      This is a rounding error of \(2^{-55} \approx 2.77556 \cdot 10^{-17} \) in positive direction.
+   <li>
+      Finally, \(z'\) gets un-rounded to \(0.30000000000000004\). This is an error of
+      \(15{,}148{,}937{,}153 \cdot 2^{-52}\cdot 5^{-17} \approx 4.4089\cdot 10^{-18}\) in <em>negative</em> direction.
+</ol>
+The cumulative error is of course \(4 \cdot 10^{-17}\). From the above we can see that all four errors are
+in the same ballpark of magnitude, although the rounding after summing dominates.
+
+Is this error bad? On one hand, the number returned is not the mathematically right one.
+On the other hand, if we could measure the average distance of the Sun to Neptune with this accuracy,
+we would be making an error of less than a millimeter. That is mind-boggling accurate. No actual measuring device
+can produce something even resembling that accuracy. If we are using floating point numbers with measured quantities,
+there is no justification in not accepting this level of inaccuracy.
+
+<h2>Safe integers</h2>
+
+When working with numbers, a lot of the time we are only working with integer numbers.
+In that case it is good to know that there is a large range of so-called <em>safe integers</em> where
+we don't need to worry about rounding.
+<p>
+A safe integer has the following properties:
+<ol>
+  <li> It can be <em>exactly represented</em> as a JavaScript floating-point number.
+  <li> No other <em>integer</em> number will ever be rounded to this number.
+</ol>
+These two properties mean that if we have, say, the result of adding two integers <code>a + b</code>, and
+the result is a safe integer, we know there wasn't any rounding involved. Note that this conclusion only holds
+if we know the sum <code>a + b</code> is in fact integer, since it is still possible for a <em>non</em>-integer number to round to a safe integer! (For example, if you enter <code>9007199254740990.6</code> on the JavaScript console you will get back <samp>9007199254740991</samp>, which is a safe integer.)
+<p>
+The safe integers are the integers \(n\) with \(-2^{53}+1 \le n \le 2^{53}-1\). These limits are also available in JavaScript as <code>Number.MIN_SAFE_INTEGER</code> and <code>Number.MAX_SAFE_INTEGER</code>. You can also directly check if a number is a safe integer with <code>Number.isSafeInteger(n)</code>.
+<p>
+Note that this is a pretty big range, also considering that the largest possible array in JavaScript is only \(2^{32}-1\).
+If it is still not enough, then there is currently a proposal for <a href="https://github.com/tc39/proposal-bigint">BigInt</a> support in JavaScript. This would allow arbitrary large integers, only limited by the memory in your computer.
+
+<h2>Special numbers: NaN, -0, ±Infinity</h2>
+
+Let's talk a bit more about these four weird numbers which aren't part of the normal real number line:
+<code>NaN</code>, <code>-0</code>, <code>Infinity</code> and <code>-Infinity</code>.
+<p>
+The first of them, <code>NaN</code>, is what you get when a mathematical operation doesn't have a defined result.
+So for example <code>0/0</code> gives <samp>NaN</samp>, and similarly <code>Math.sqrt(-1)</code>. Note that
+<code>NaN</code> has a very peculiar property; it is the only value in JavaScript which is
+<em>unequal to itself</em>. So in fact <code>NaN === NaN</code> returns <samp>false</samp>.
+<p>
+Note that this means that if you want to check for <code>NaN</code>, you shouldn't do <code><span class="metavar">number</span> === NaN</code>, but rather use the <code>isNaN</code> function like so: <code>isNaN(<span class="metavar">number</span>)</code>.
+<p>
+The situation with <code>-0</code> and <code>0</code> is a bit like the reverse of the <code>NaN</code> situation; while these two values are distinct, we have <code>0 === -0</code>. So these values can be <em>almost</em> used interchangeably, except that in a few situations operations on them produce different results. So for example, <code>1/0</code> gives <samp>Infinity</samp>, but <code>1/-0</code> gives <samp>-Infinity</samp>. And <code>Infinity !== -Infinity</code>.
+<p>
+Sometimes it is useful to check if two numbers are <em>really</em> the same. In that case, you can use the function <code>Object.is</code>. This is the same as <code>===</code>, <em>except</em> for <code>NaN</code> and <code>±0</code>. So <code>Object.is(NaN, NaN)</code> produces <samp>true</samp> and <code>Object.is(0, -0)</code> produces <samp>false</samp>.
+
+<h2>Floating-point identities</h2>
+
+Under normal mathematics, addition is <em>associative</em>, which means that for arbitrary numbers \(x\), \(y\) and \(z\), the equality \( (x + y) + z = x + (y + z)\) holds. However, with JavaScript floating-point numbers a rounding step occurs after each addition, so this equality is generally <em>not</em> true for JavaScript numbers. For example, try <code>(0.1 + 0.2) + 0.3</code> and compare with <code>0.1 + (0.2 + 0.3)</code>. 
+<p>
+So that is the bad news. The good news is that there are still a number of <em>identities</em> which hold even for
+floating-point numbers. So for example, addition is still <em>commutative</em>, meaning that
+<code><span class="metavar">x</span> + <span class="metavar">y</span> === <span class="metavar">y</span> + <span class="metavar">x</span></code>. 
+<p>
+The following table shows a number of useful identities which hold for any JavaScript number (unless otherwise mentioned), so also
+for <code>NaN</code>, <code>±Infinity</code> and <code>±0</code>. 
+ Equality is in terms of <code>Object.is</code>, so these identities preserve <code>NaN</code> and the sign of <code>±0</code>.
+<figure>
+<table>
+  <tr> <td> \(x + y \equiv y + x\) </td>
+        <td> \(x * y \equiv y * x\) </td>
+   </tr>
+  <tr> <td> \(- (- x) \equiv x\) </td>
+        <td> \(x - y \equiv x + (- y)\) </td>
+   </tr>
+  <tr> <td> \(x - 0 \equiv x\) </td>
+        <td> \(x + 0 \equiv x \), for \(x \not\equiv -0\). Note: \((-0) + 0 \equiv 0\).</td>
+   </tr>
+  <tr> <td> \(1 * x \equiv x\) </td>
+        <td> \( (-1) * x \equiv -x \)</td>
+   </tr>
+  <tr> <td> \(2 * x \equiv x + x\) </td>
+        <td> \( x - x \equiv 0 \), for \(x \not\in \) {<code>Infinity</code>, <code>-Infinity</code>, <code>NaN</code>}.</td>
+   </tr>
+</table>
+<figcaption>Floating-point identities. The symbol \(\equiv\) means equality in the sense of <code>Object.is</code>.</figcaption>
+</figure>
+
+
+<h2>Bonus section: Computing S, E and F in JavaScript</h2>
+
+Here is some code to find S, E and F for an arbitrary JavaScript number.
+
+<pre>
+<script class="code" type="text/javascript">function decomposeNumber(x) {
+  const dataView = new DataView(new ArrayBuffer(8));
+  dataView.setFloat64(0, x);
+  const hi = dataView.getUint32(0);
+  const lo = dataView.getUint32(4);
+  return {
+    S: hi >>> 31, 
+    E: (hi << 1) >>> 21, 
+    F: (hi & ((1<<20)-1)) * 2**32 + lo
+  };
+}
+</script>
+</pre>
+This code is actually in a &lt;script&gt; tag, so you can now open your JavaScript console 
+and try it out live (typically with <kbd>F12</kbd>).
+</article>
+<div class="footer">
+  Interested in more cool stuff?
+Check out my code at <a href="https://github.com/stephanh42">GitHub</a>.
+</div>
+
+
+</body>
+</html>

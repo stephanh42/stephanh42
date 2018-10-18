@@ -56,3 +56,8 @@ th, td,tr {
 li {
   padding: 5px 10px;
 }
+
+.footer {
+  font-style: italic;
+  padding: 20px 20px;
+}
